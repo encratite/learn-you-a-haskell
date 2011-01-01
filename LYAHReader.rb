@@ -37,12 +37,19 @@ class LYAHReader
   def performReplacements(content)
     replacements =
       [
-       [/<h1.+?>/, "\\section{"],
-       ['</h1>', '}'],
-       ["<p>\n", "\par{"],
-       ["\n</p>", '}'],
+       ["\r", ''],
+       [/ *<h1.*?>(.+?)<\/h1>/, "\\section{%s}"],
+       [/ *<h2>(.+?)<\/h2>/, "\\subsection{%s}"],
+       #[/<p>(.+?)<\/p>/m, "\\par{%s}"],
+       [/<a .+?><\/a>\n?/, ''],
+       [/<a .+?>(.+?)<\/a>/, "\\textit{%s}"],
+       [/<img.+?>\n?/, ''],
       ].each do |target, replacement|
-      content = content.gsub(target, replacement)
+      content = content.gsub(target) do |match|
+        #puts match[0, 20].inspect
+        replacement = replacement.gsub('%s', $1) if $1 != nil
+        replacement
+      end
     end
     return content
   end
@@ -53,6 +60,7 @@ class LYAHReader
       begin
         path = File.join(directory, getChapterName(counter))
         markup = File.new(path, 'rb').read
+        puts "Processing file #{path}"
         processChapter(markup)
       rescue Errno::ENOENT
         break
@@ -65,11 +73,11 @@ class LYAHReader
     pattern = /(<h1.+?>.+?)<div class="footdiv">/m
     match = markup.match(pattern)
     raise 'Unable to extract the content' if match == nil
-    content = performReplacements(match[1])
+    content = performReplacements(match[1].strip)
     @output += content
   end
 
   def writeOutput(file)
-    File.new(file, 'w+b').write(file)
+    File.new(file, 'w+b').write(@output)
   end
 end

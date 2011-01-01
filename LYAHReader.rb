@@ -40,6 +40,7 @@ class LYAHReader
        ['_', "\\_"],
        ['{', "\\{"],
        ['}', "\\}"],
+       #['$', "\\$"],
       ]
 
     return performReplacements(code, replacements)
@@ -62,19 +63,33 @@ class LYAHReader
     lambda { |x| "\\#{tag}{#{x}}" }
   end
 
+  def latexSingletonLambda(tag)
+    lambda { |x| "\\#{tag} #{x}" }
+  end
+
+  def latexEnvironmentLambda(tag)
+    lambda { |x| "\\begin{#{tag}}\n#{x}\n\\end{#{tag}}" }
+  end
+
   def performMarkupReplacements(content)
     replacements =
       [
        ["\r", ''],
+       [/(<[a-z]+.+?>)/m, lambda { |x| x.gsub("\n", ' ').gsub('  ', ' ') }],
        [/ *<h1.*?>(.+?)<\/h1>/, latexLambda('section')],
        [/ *<h2>(.+?)<\/h2>/, latexLambda('subsection')],
+       [/ *<h3>(.+?)<\/h3>/, latexLambda('subsubsection')],
        [/<p>(.+?)<\/p>/m, latexLambda('par')],
-       [/<p>(.+)/, latexLambda('par')],
+       [/<p>(.*)/, latexLambda('par')],
        [/<a .+?><\/a>\n?/, ''],
-       [/<a .+?>(.+?)<\/a>/, latexLambda('textit')],
+       [/<a .+?>(.+?)<\/a>/m, latexLambda('textit')],
        [/<i>(.+?)<\/i>/, latexLambda('textit')],
-       [/<span.+?>(.+?)<\/span>/, latexLambda('textit')],
+       [/<span.+?>(.+?)<\/span>/m, latexLambda('textit')],
        [/<em>(.+?)<\/em>/, latexLambda('textbf')],
+       [/<b>(.+?)<\/b>/m, latexLambda('textbf')],
+       [/<ul>(.+?)<\/ul>/m, latexEnvironmentLambda('itemize')],
+       [/ *<li>(.+?)<\/li>/m, latexSingletonLambda('item')],
+       [/<sup>(.+?)<\/sup>/, lambda { |x| "^{#{x}}" }],
        [/<span class="fixed">(.+?)<\/span>/, lambda { |x| "\\texttt{#{latexifyCode(x)}}" }],
        [/<pre.+?>(.+?)<\/pre>/m, lambda { |x| "\\lstlisting{#{latexifyCode(x.strip)}}" }],
        [/<(?:div|p) class="hintbox">(.+?)<\/(?:div|p)>/m, latexLambda('lstlisting')],
@@ -84,6 +99,7 @@ class LYAHReader
        ['&gt;', '>'],
        ['&lt;', '<'],
        ['&amp;', '&'],
+       ['$', "\\$"],
       ]
 
     return performReplacements(content, replacements)

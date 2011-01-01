@@ -6,4 +6,4 @@ outputDirectory = 'output'
 reader = LYAHReader.new
 #reader.downloadMarkup(url, outputDirectory)
 reader.loadChapters(outputDirectory)
-reader.writeOutput('LearnYouAHaskell.tex')
+reader.writeOutput('Learn You A Haskell.tex')

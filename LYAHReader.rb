@@ -39,14 +39,9 @@ class LYAHReader
     replacements =
       [
        ["\\", "\\textbackslash "],
-       #['_', "\\_"],
        ['{', "\\{"],
        ['}', "\\}"],
        ['^', "\\^"],
-       #['&', "\\&"],
-       #['[', "\\["],
-       #[']', "\\]"],
-       #['$', "\\$"],
       ]
 
     return performReplacements(code, replacements)
@@ -78,12 +73,10 @@ class LYAHReader
   end
 
   def processSup(x)
-    #puts x.inspect
     inner = x.gsub("<sup>", "^{")
     inner = inner.gsub("</sup>", "}")
     #hack
     output = "@@@#{inner}@@@"
-    #puts output.inspect
     return output
   end
 
@@ -105,7 +98,7 @@ class LYAHReader
        [/<ul>(.+?)<\/ul>/m, latexEnvironmentLambda('itemize')],
        [/ *<li>(.+?)<\/li>/m, latexSingletonLambda('item')],
        [/<span +class="fixed">(.+?)<\/span>/m, lambda { |x| "\\texttt{#{latexifyCode(x)}}" }],
-       [/<pre.+?>(.+?)<\/pre>/m, lambda { |x| "\\begin{lstlisting}\n#{latexifyCode(x.strip)}\n\\end{lstlisting}" }],
+       [/<pre.+?>(.+?)<\/pre>/m, lambda { |x| "\\begin{lstlisting}[language=Haskell, breaklines=true]\n#{latexifyCode(x.strip)}\n\\end{lstlisting}" }],
        [/<(?:div|p) class="hintbox">(.+?)<\/(?:div|p)>/m, latexEnvironmentLambda('lstlisting')],
        [/<span class="(?:label (?:function|type|class|law)|(?:function|class) label)">(.+?)<\/span>/m, lambda { |x| "\\texttt{#{latexifyCode(x)}}" }],
        [/<span style=.+?>(.+?)<\/span>/m, latexLambda('textit')],
@@ -123,7 +116,8 @@ class LYAHReader
        ['#', "\\#"],
        ['_', "\\_"],
        ['$', "\\$"],
-       ['&&', "\\&\\&"],
+       [/(\\begin{lstlisting}.*?\\end{lstlisting})/m, lambda { |x| x.gsub('\\&', '&') }],
+       ['\texttt{&&}', '\texttt{\&\&}'],
        ['%', "\\%"],
        #processSup hack
        ['@@@', '$'],
@@ -155,13 +149,20 @@ class LYAHReader
     @output += content
   end
 
-  def getFormattedData
-    %q{\documentclass[a4paper,10pt]{article}
-
+  def getFormattedData(isEnlarged)
+    #the following numbers are fairly specific to my ebook reader
+    (isEnlarged ? %q{
+\documentclass[17pt]{extreport}
+\usepackage[top=0.5cm, bottom=1.3cm, left=0.8cm, right=0.5cm]{geometry}
+}
+     : %q{
+\documentclass[10pt]{extreport}
+}
+     ) + %q{
 \usepackage[english]{babel}
 
 \usepackage[utf8]{inputenc}
-\usepackage{tgschola}
+\usepackage{mathptmx}
 
 \usepackage{listings}
 
@@ -175,23 +176,17 @@ class LYAHReader
 
 \usepackage{url}
 
-%\setlength{\parindent}{0cm}
-\setlength{\parskip}{10pt}
+\setlength{\parskip}{8pt}
 
-\linespread{1}
-
-%\usepackage{ulem}
-
-%\usepackage[compact]{titlesec}
-%\titlespacing{\section}{0pt}{*0}{*0}
-%\titlespacing{\section}{0pt}{*0}{*0}
-%\titlespacing{\subsection}{0pt}{*0}{*0}
+\usepackage[compact]{titlesec}
+\titlespacing{\section}{0pt}{*0}{*0}
+\titlespacing{\subsection}{0pt}{*0}{*0}
 
 \lstset{numbers=left, frame=single, tabsize=4}
 
 \begin{document}
 
-\title{Learn You A Haskell}
+\title{Learn You a Haskell}
 \author{Miran Lipovača}
 
 \maketitle
@@ -199,10 +194,11 @@ class LYAHReader
 \tableofcontents
 \newpage
 } + @output + %q{
-\end{document}}
+\end{document}
+}
   end
 
-  def writeOutput(file)
-    File.new(file, 'w+b').write(getFormattedData)
+  def writeOutput(file, isEnlarged)
+    File.new(file, 'w+b').write(getFormattedData(isEnlarged))
   end
 end

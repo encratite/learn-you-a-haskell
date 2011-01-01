@@ -66,20 +66,17 @@ class LYAHReader
     replacements =
       [
        ["\r", ''],
-
-       #broken HTML
-       ["elements from an empty list.\n", "elements from an empty list.</p>\n"],
-       ["<span class=\"fixed\">True</span>.\n", "<span class=\"fixed\">True</span>.</p>\n"],
-
        [/ *<h1.*?>(.+?)<\/h1>/, latexLambda('section')],
        [/ *<h2>(.+?)<\/h2>/, latexLambda('subsection')],
        [/<p>(.+?)<\/p>/m, latexLambda('par')],
+       [/<p>(.+)/, latexLambda('par')],
        [/<a .+?><\/a>\n?/, ''],
        [/<a .+?>(.+?)<\/a>/, latexLambda('textit')],
        [/<i>(.+?)<\/i>/, latexLambda('textit')],
+       [/<span.+?>(.+?)<\/span>/, latexLambda('textit')],
        [/<em>(.+?)<\/em>/, latexLambda('textbf')],
        [/<span class="fixed">(.+?)<\/span>/, lambda { |x| "\\texttt{#{latexifyCode(x)}}" }],
-       [/<pre.+?>\n(.+?)<\/pre>/m, latexLambda('lstlisting')],
+       [/<pre.+?>(.+?)<\/pre>/m, lambda { |x| "\\lstlisting{#{latexifyCode(x.strip)}}" }],
        [/<(?:div|p) class="hintbox">(.+?)<\/(?:div|p)>/m, latexLambda('lstlisting')],
        [/<span class="label function">(.+?)<\/span>/, latexLambda('texttt')],
        [/<img.+?>\n?/, ''],

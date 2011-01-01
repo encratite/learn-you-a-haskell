@@ -38,13 +38,14 @@ class LYAHReader
   def latexifyCode(code)
     replacements =
       [
-       ["\\", "\\\\"],
+       ["\\", "\\textbackslash "],
        #['_', "\\_"],
        ['{', "\\{"],
        ['}', "\\}"],
        ['^', "\\^"],
-       ['[', "\\["],
-       [']', "\\]"],
+       #['&', "\\&"],
+       #['[', "\\["],
+       #[']', "\\]"],
        #['$', "\\$"],
       ]
 
@@ -103,11 +104,11 @@ class LYAHReader
        [/<b>(.+?)<\/b>/m, latexLambda('textbf')],
        [/<ul>(.+?)<\/ul>/m, latexEnvironmentLambda('itemize')],
        [/ *<li>(.+?)<\/li>/m, latexSingletonLambda('item')],
-       [/<span class="fixed">(.+?)<\/span>/, lambda { |x| "\\texttt{#{latexifyCode(x)}}" }],
+       [/<span +class="fixed">(.+?)<\/span>/m, lambda { |x| "\\texttt{#{latexifyCode(x)}}" }],
        [/<pre.+?>(.+?)<\/pre>/m, lambda { |x| "\\begin{lstlisting}\n#{latexifyCode(x.strip)}\n\\end{lstlisting}" }],
        [/<(?:div|p) class="hintbox">(.+?)<\/(?:div|p)>/m, latexEnvironmentLambda('lstlisting')],
-       [/<span class="label (?:function|type)">(.+?)<\/span>/, latexLambda('texttt')],
-       #[/<span.+?>(.+?)<\/span>/m, latexLambda('textit')],
+       [/<span class="(?:label (?:function|type|class|law)|(?:function|class) label)">(.+?)<\/span>/m, lambda { |x| "\\texttt{#{latexifyCode(x)}}" }],
+       [/<span style=.+?>(.+?)<\/span>/m, latexLambda('textit')],
        [/<img.+?>\n?/, ''],
        [/\\textit{(.*?<sup>.+?<\/sup>.*?)}/, method(:processSup)],
        [/ +\n/, "\n"],
@@ -116,9 +117,14 @@ class LYAHReader
        ['&amp;', "\\&"],
        ['&hellip;', "\\dots"],
        ['&mdash;', "--"],
+       ['&ldquo;', "``"],
+       ['&rdquo;', "''"],
+       ['&nbsp;', ' '],
        ['#', "\\#"],
        ['_', "\\_"],
        ['$', "\\$"],
+       ['&&', "\\&\\&"],
+       ['%', "\\%"],
        #processSup hack
        ['@@@', '$'],
       ]

@@ -40,15 +40,20 @@ class LYAHReader
        ["\r", ''],
        [/ *<h1.*?>(.+?)<\/h1>/, "\\section{%s}"],
        [/ *<h2>(.+?)<\/h2>/, "\\subsection{%s}"],
-       #[/<p>(.+?)<\/p>/m, "\\par{%s}"],
+       [/<p>(.+?)<\/p>/m, "\\par{%s}"],
        [/<a .+?><\/a>\n?/, ''],
        [/<a .+?>(.+?)<\/a>/, "\\textit{%s}"],
        [/<img.+?>\n?/, ''],
-      ].each do |target, replacement|
-      content = content.gsub(target) do |match|
-        #puts match[0, 20].inspect
-        replacement = replacement.gsub('%s', $1) if $1 != nil
-        replacement
+       [/ +\n/, "\n"],
+      ]
+
+    replacements.each do |target, replacement|
+      content = content.gsub(target) do
+        if $1 == nil
+          replacement
+        else
+          replacement.gsub('%s', $1)
+        end
       end
     end
     return content

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 require 'open-uri'
 require 'hpricot'
 require 'fileutils'
@@ -37,9 +38,13 @@ class LYAHReader
   def latexifyCode(code)
     replacements =
       [
-       ['_', "\\_"],
+       ["\\", "\\\\"],
+       #['_', "\\_"],
        ['{', "\\{"],
        ['}', "\\}"],
+       ['^', "\\^"],
+       ['[', "\\["],
+       [']', "\\]"],
        #['$', "\\$"],
       ]
 
@@ -49,7 +54,7 @@ class LYAHReader
   def performReplacements(content, replacements)
     replacements.each do |target, replacement|
       content = content.gsub(target) do |match|
-        if replacement.class == Proc
+        if [Proc, Method].include?(replacement.class)
           replacement.call($1)
         else
           replacement
@@ -71,6 +76,16 @@ class LYAHReader
     lambda { |x| "\\begin{#{tag}}\n#{x}\n\\end{#{tag}}" }
   end
 
+  def processSup(x)
+    #puts x.inspect
+    inner = x.gsub("<sup>", "^{")
+    inner = inner.gsub("</sup>", "}")
+    #hack
+    output = "@@@#{inner}@@@"
+    #puts output.inspect
+    return output
+  end
+
   def performMarkupReplacements(content)
     replacements =
       [
@@ -84,22 +99,28 @@ class LYAHReader
        [/<a .+?><\/a>\n?/, ''],
        [/<a .+?>(.+?)<\/a>/m, latexLambda('textit')],
        [/<i>(.+?)<\/i>/, latexLambda('textit')],
-       [/<span.+?>(.+?)<\/span>/m, latexLambda('textit')],
        [/<em>(.+?)<\/em>/, latexLambda('textbf')],
        [/<b>(.+?)<\/b>/m, latexLambda('textbf')],
        [/<ul>(.+?)<\/ul>/m, latexEnvironmentLambda('itemize')],
        [/ *<li>(.+?)<\/li>/m, latexSingletonLambda('item')],
-       [/<sup>(.+?)<\/sup>/, lambda { |x| "^{#{x}}" }],
        [/<span class="fixed">(.+?)<\/span>/, lambda { |x| "\\texttt{#{latexifyCode(x)}}" }],
-       [/<pre.+?>(.+?)<\/pre>/m, lambda { |x| "\\lstlisting{#{latexifyCode(x.strip)}}" }],
-       [/<(?:div|p) class="hintbox">(.+?)<\/(?:div|p)>/m, latexLambda('lstlisting')],
-       [/<span class="label function">(.+?)<\/span>/, latexLambda('texttt')],
+       [/<pre.+?>(.+?)<\/pre>/m, lambda { |x| "\\begin{lstlisting}\n#{latexifyCode(x.strip)}\n\\end{lstlisting}" }],
+       [/<(?:div|p) class="hintbox">(.+?)<\/(?:div|p)>/m, latexEnvironmentLambda('lstlisting')],
+       [/<span class="label (?:function|type)">(.+?)<\/span>/, latexLambda('texttt')],
+       #[/<span.+?>(.+?)<\/span>/m, latexLambda('textit')],
        [/<img.+?>\n?/, ''],
+       [/\\textit{(.*?<sup>.+?<\/sup>.*?)}/, method(:processSup)],
        [/ +\n/, "\n"],
        ['&gt;', '>'],
        ['&lt;', '<'],
-       ['&amp;', '&'],
+       ['&amp;', "\\&"],
+       ['&hellip;', "\\dots"],
+       ['&mdash;', "--"],
+       ['#', "\\#"],
+       ['_', "\\_"],
        ['$', "\\$"],
+       #processSup hack
+       ['@@@', '$'],
       ]
 
     return performReplacements(content, replacements)
@@ -128,7 +149,54 @@ class LYAHReader
     @output += content
   end
 
+  def getFormattedData
+    %q{\documentclass[a4paper,10pt]{article}
+
+\usepackage[english]{babel}
+
+\usepackage[utf8]{inputenc}
+\usepackage{tgschola}
+
+\usepackage{listings}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+
+\usepackage{graphicx}
+
+\usepackage{bbding}
+
+\usepackage{url}
+
+%\setlength{\parindent}{0cm}
+\setlength{\parskip}{10pt}
+
+\linespread{1}
+
+%\usepackage{ulem}
+
+%\usepackage[compact]{titlesec}
+%\titlespacing{\section}{0pt}{*0}{*0}
+%\titlespacing{\section}{0pt}{*0}{*0}
+%\titlespacing{\subsection}{0pt}{*0}{*0}
+
+\lstset{numbers=left, frame=single, tabsize=4}
+
+\begin{document}
+
+\title{Learn You A Haskell}
+\author{Miran Lipovača}
+
+\maketitle
+
+\tableofcontents
+\newpage
+} + @output + %q{
+\end{document}}
+  end
+
   def writeOutput(file)
-    File.new(file, 'w+b').write(@output)
+    File.new(file, 'w+b').write(getFormattedData)
   end
 end

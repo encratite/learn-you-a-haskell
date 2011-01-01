@@ -1,4 +1,9 @@
 require_relative 'LYAHReader'
 
-reader = LYAHReader.new('http://learnyouahaskell.com/chapters')
+url = 'http://learnyouahaskell.com/chapters'
+outputDirectory = 'output'
+
+reader = LYAHReader.new
+#reader.downloadMarkup(url, outputDirectory)
+reader.loadChapters(outputDirectory)
 reader.writeOutput('LearnYouAHaskell.tex')

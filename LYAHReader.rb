@@ -34,29 +34,62 @@ class LYAHReader
     end
   end
 
-  def performReplacements(content)
+  def latexifyCode(code)
     replacements =
       [
-       ["\r", ''],
-       [/ *<h1.*?>(.+?)<\/h1>/, "\\section{%s}"],
-       [/ *<h2>(.+?)<\/h2>/, "\\subsection{%s}"],
-       [/<p>(.+?)<\/p>/m, "\\par{%s}"],
-       [/<a .+?><\/a>\n?/, ''],
-       [/<a .+?>(.+?)<\/a>/, "\\textit{%s}"],
-       [/<img.+?>\n?/, ''],
-       [/ +\n/, "\n"],
+       ['_', "\\_"],
+       ['{', "\\{"],
+       ['}', "\\}"],
       ]
 
+    return performReplacements(code, replacements)
+  end
+
+  def performReplacements(content, replacements)
     replacements.each do |target, replacement|
-      content = content.gsub(target) do
-        if $1 == nil
-          replacement
+      content = content.gsub(target) do |match|
+        if replacement.class == Proc
+          replacement.call($1)
         else
-          replacement.gsub('%s', $1)
+          replacement
         end
       end
     end
     return content
+  end
+
+  def latexLambda(tag)
+    lambda { |x| "\\#{tag}{#{x}}" }
+  end
+
+  def performMarkupReplacements(content)
+    replacements =
+      [
+       ["\r", ''],
+
+       #broken HTML
+       ["elements from an empty list.\n", "elements from an empty list.</p>\n"],
+       ["<span class=\"fixed\">True</span>.\n", "<span class=\"fixed\">True</span>.</p>\n"],
+
+       [/ *<h1.*?>(.+?)<\/h1>/, latexLambda('section')],
+       [/ *<h2>(.+?)<\/h2>/, latexLambda('subsection')],
+       [/<p>(.+?)<\/p>/m, latexLambda('par')],
+       [/<a .+?><\/a>\n?/, ''],
+       [/<a .+?>(.+?)<\/a>/, latexLambda('textit')],
+       [/<i>(.+?)<\/i>/, latexLambda('textit')],
+       [/<em>(.+?)<\/em>/, latexLambda('textbf')],
+       [/<span class="fixed">(.+?)<\/span>/, lambda { |x| "\\texttt{#{latexifyCode(x)}}" }],
+       [/<pre.+?>\n(.+?)<\/pre>/m, latexLambda('lstlisting')],
+       [/<(?:div|p) class="hintbox">(.+?)<\/(?:div|p)>/m, latexLambda('lstlisting')],
+       [/<span class="label function">(.+?)<\/span>/, latexLambda('texttt')],
+       [/<img.+?>\n?/, ''],
+       [/ +\n/, "\n"],
+       ['&gt;', '>'],
+       ['&lt;', '<'],
+       ['&amp;', '&'],
+      ]
+
+    return performReplacements(content, replacements)
   end
 
   def loadChapters(directory)
@@ -78,7 +111,7 @@ class LYAHReader
     pattern = /(<h1.+?>.+?)<div class="footdiv">/m
     match = markup.match(pattern)
     raise 'Unable to extract the content' if match == nil
-    content = performReplacements(match[1].strip)
+    content = performMarkupReplacements(match[1].strip)
     @output += content
   end
 

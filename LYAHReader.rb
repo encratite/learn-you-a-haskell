@@ -99,7 +99,7 @@ class LYAHReader
        [/ *<li>(.+?)<\/li>/m, latexSingletonLambda('item')],
        [/<span +class="fixed">(.+?)<\/span>/m, lambda { |x| "\\texttt{#{latexifyCode(x)}}" }],
        [/<pre.+?>(.+?)<\/pre>/m, lambda { |x| "\\begin{lstlisting}[language=Haskell, breaklines=true]\n#{latexifyCode(x.strip)}\n\\end{lstlisting}" }],
-       [/<(?:div|p) class="hintbox">(.+?)<\/(?:div|p)>/m, latexEnvironmentLambda('lstlisting')],
+       [/<(?:div|p) class="hintbox">(.+?)<\/(?:div|p)>/m, latexEnvironmentLambda('framed')],
        [/<span class="(?:label (?:function|type|class|law)|(?:function|class) label)">(.+?)<\/span>/m, lambda { |x| "\\texttt{#{latexifyCode(x)}}" }],
        [/<span style=.+?>(.+?)<\/span>/m, latexLambda('textit')],
        [/<img.+?>\n?/, ''],
@@ -160,21 +160,15 @@ class LYAHReader
 }
      ) + %q{
 \usepackage[english]{babel}
-
 \usepackage[utf8]{inputenc}
 \usepackage{mathptmx}
-
 \usepackage{listings}
-
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
-
 \usepackage{graphicx}
-
 \usepackage{bbding}
-
-\usepackage{url}
+\usepackage{framed}
 
 \setlength{\parskip}{8pt}
 
@@ -186,7 +180,7 @@ class LYAHReader
 
 \begin{document}
 
-\title{Learn You a Haskell}
+\title{Learn You a Haskell for Great Good!}
 \author{Miran Lipovača}
 
 \maketitle

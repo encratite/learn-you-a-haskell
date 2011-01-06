@@ -98,7 +98,7 @@ class LYAHReader
        [/<ul>(.+?)<\/ul>/m, latexEnvironmentLambda('itemize')],
        [/ *<li>(.+?)<\/li>/m, latexSingletonLambda('item')],
        [/<span +class="fixed">(.+?)<\/span>/m, lambda { |x| "\\texttt{#{latexifyCode(x)}}" }],
-       [/<pre.+?>(.+?)<\/pre>/m, lambda { |x| "\\begin{lstlisting}[language=Haskell, breaklines=true]\n#{latexifyCode(x.strip)}\n\\end{lstlisting}" }],
+       [/<pre.+?>(.+?)<\/pre>/m, lambda { |x| "\\begin{lstlisting}[language=Haskell, breaklines=true]\n#{x.strip}\n\\end{lstlisting}" }],
        [/<(?:div|p) class="hintbox">(.+?)<\/(?:div|p)>/m, latexEnvironmentLambda('framed')],
        [/<span class="(?:label (?:function|type|class|law)|(?:function|class) label)">(.+?)<\/span>/m, lambda { |x| "\\texttt{#{latexifyCode(x)}}" }],
        [/<span style=.+?>(.+?)<\/span>/m, latexLambda('textit')],
@@ -149,11 +149,11 @@ class LYAHReader
     @output += content
   end
 
-  def getFormattedData(isEnlarged)
+  def getFormattedData(isEbook)
     #the following numbers are fairly specific to my ebook reader
-    (isEnlarged ? %q{
+    (isEbook ? %q{
 \documentclass[17pt]{extreport}
-\usepackage[top=0.5cm, bottom=1.3cm, left=0.8cm, right=0.5cm]{geometry}
+\usepackage[top=0.4cm, bottom=0.4cm, left=0.8cm, right=0.5cm]{geometry}
 }
      : %q{
 \documentclass[10pt]{extreport}
@@ -184,7 +184,10 @@ class LYAHReader
 \author{Miran Lipovača}
 
 \maketitle
-
+} + (isEbook ? %q{
+\thispagestyle{empty}
+\pagestyle{empty}
+} : '') + %q{
 \tableofcontents
 \newpage
 } + @output + %q{
@@ -192,7 +195,7 @@ class LYAHReader
 }
   end
 
-  def writeOutput(file, isEnlarged)
-    File.new(file, 'w+b').write(getFormattedData(isEnlarged))
+  def writeOutput(file, isEbook)
+    File.new(file, 'w+b').write(getFormattedData(isEbook))
   end
 end

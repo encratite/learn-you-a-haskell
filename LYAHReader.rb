@@ -116,11 +116,11 @@ class LYAHReader
        ['#', "\\#"],
        ['_', "\\_"],
        ['$', "\\$"],
-       [/(\\begin{lstlisting}.*?\\end{lstlisting})/m, lambda { |x| x.gsub('\\&', '&') }],
        ['\texttt{&&}', '\texttt{\&\&}'],
        ['%', "\\%"],
        #processSup hack
        ['@@@', '$'],
+       [/(\\begin{lstlisting}.*?\\end{lstlisting})/m, lambda { |x| x.gsub('\\&', '&').gsub('\\$', '$').gsub('\\_', '_') }],
       ]
 
     return performReplacements(content, replacements)
